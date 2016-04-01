@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WPLab Import/Export Plugin
  * Plugin URI: https://www.wplab.com/
- * Description: WPLab tool that helps you import/export ...
+ * Description: WPLab tool that helps you import/export wplister data
  * Version: 1.0
  * Author: Hamilton Nieri
  * Author URI: https://www.wplab.com/
@@ -31,9 +31,59 @@
 if ( ! function_exists( 'get_plugins' ) )
     require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
+// Including base class
+if ( ! class_exists( 'WPL_Export_CSV' ) )
+    require_once plugin_dir_path( __FILE__ ) . 'classes/class-wpl-export-csv.php';
+
 // Whether plugin active or not
 if ( is_plugin_active( 'woocommerce/woocommerce.php' ) ) :
 
-	
+	add_action('admin_menu', 'wpl_import_export_register_menu');
+ 	
+ 	function wpl_import_export_register_menu() {
+ 		add_submenu_page(
+		    'wplister',  
+		    'Import / Export',
+		    'Import / Export',
+		    'manage_options',
+		    'wpl-import-export-page',
+		    'wpl_import_export_page_callback'
+		);
+ 	}
+
+ 	function wpl_import_export_page_callback() {
+ 		$wple = new WPL_Export_CSV();
+ 		$wple->output_page_content();
+ 	}
+
+ 	add_action('init', 'wpl_import_export_init'); 
+
+ 	function wpl_import_export_init() {
+
+ 		if ( isset($_GET['addon_action']) ) {
+ 			
+ 			$wple = new WPL_Export_CSV();
+ 			
+ 			switch ( $_GET['addon_action'] ) {
+ 				
+ 				case 'export_order':
+ 					// One Order Per Row
+ 					$wple->export_order_csv();
+ 					break;
+ 				
+ 				case 'export_orderitem':
+ 					// One Order Item Per Row
+ 					$wple->export_orderitem_csv();
+ 					break;
+
+ 				case 'import_order':
+ 					
+ 					break;
+ 				
+ 				default:
+ 					break;
+ 			}
+ 		}
+ 	}
 
 endif;

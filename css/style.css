@@ -1,0 +1,6 @@
+.tab-export, .tab-import {
+	display: none;
+}
+.tab-active {
+	display: block;
+}
