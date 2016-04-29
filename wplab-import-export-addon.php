@@ -32,8 +32,8 @@ if ( ! function_exists( 'get_plugins' ) )
     require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 // Including base class
-if ( ! class_exists( 'WPL_Export_CSV' ) )
-    require_once plugin_dir_path( __FILE__ ) . 'classes/class-wpl-export-csv.php';
+if ( ! class_exists( 'WPL_Import_Export_CSV' ) )
+    require_once plugin_dir_path( __FILE__ ) . 'classes/class-wpl-import-export-csv.php';
 
 // Whether plugin active or not
 if ( is_plugin_active( 'woocommerce/woocommerce.php' ) ) :
@@ -51,35 +51,38 @@ if ( is_plugin_active( 'woocommerce/woocommerce.php' ) ) :
 		);
  	}
 
+ 	$wpl_csv = new WPL_Import_Export_CSV();
+
  	function wpl_import_export_page_callback() {
- 		$wple = new WPL_Export_CSV();
- 		$wple->output_page_content();
+ 		global $wpl_csv;
+ 		$wpl_csv->output_page_content();
  	}
 
  	add_action('init', 'wpl_import_export_init'); 
 
  	function wpl_import_export_init() {
 
- 		if ( isset($_GET['addon_action']) ) {
+ 		if ( isset($_POST['addon_action']) ) {
  			
- 			$wple = new WPL_Export_CSV();
+ 			global $wpl_csv;
  			
- 			switch ( $_GET['addon_action'] ) {
+ 			switch ( $_POST['addon_action'] ) {
  				
  				case 'export_order':
  					// One Order Per Row
- 					$wple->export_order_csv();
+ 					$wpl_csv->export_order_csv();
  					break;
  				
  				case 'export_orderitem':
  					// One Order Item Per Row
- 					$wple->export_orderitem_csv();
+ 					$wpl_csv->export_orderitem_csv();
  					break;
 
  				case 'import_order':
- 					
+ 					// Import CSV
+ 					$wpl_csv->import_order_csv();
  					break;
- 				
+ 
  				default:
  					break;
  			}

@@ -1,6 +1,6 @@
 <?php
 /**
- * @class         WPL_Export_CSV
+ * @class         WPL_Import_Export_CSV
  * @since         
  * @package       WPL CSV Import / Export
  * @license       http://www.gnu.org/licenses/gpl-3.0.html
@@ -13,15 +13,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 //include "EbayController.php";
-if ( ! class_exists( 'WPL_Export_CSV' ) ) :
+if ( ! class_exists( 'WPL_Import_Export_CSV' ) ) :
 
 // To parse serialized object "details", it should require EBatNS classes
 include_once WP_PLUGIN_DIR . '/wplab-import-export-addon/include/OrderType.php';
-
+include_once ABSPATH . 'wp-admin/includes/media.php';
+include_once ABSPATH . 'wp-admin/includes/file.php';
+include_once ABSPATH . 'wp-admin/includes/image.php';
 /**
- * WPL_Export_CSV Class.
+ * WPL_Import_Export_CSV Class.
  */
-class WPL_Export_CSV {
+class WPL_Import_Export_CSV {
 	
 	/**
      * Class constructor
@@ -30,7 +32,7 @@ class WPL_Export_CSV {
      * @param 
      */
     public function __construct() {
-    	$this->wple_enqueue();
+    	$this->wpl_enqueue();
     }
 
     /**
@@ -41,7 +43,7 @@ class WPL_Export_CSV {
 	 */
 	public function output_page_content() {
 			
-		include WP_PLUGIN_DIR . '/wplab-import-export-addon/views/export_csv_template.php';
+		include WP_PLUGIN_DIR . '/wplab-import-export-addon/views/import_export_csv_template.php';
 
 	}
 
@@ -165,6 +167,8 @@ class WPL_Export_CSV {
 		array_push( $header, "transaction_id" );
 		array_push( $header, "OrderLineItemID" );
 		array_push( $header, "TransactionPrice" );
+		array_push( $header, "OrderID" );
+		array_push( $header, "DateCreated");
 		
 		fputcsv( $fp, $header );
 
@@ -188,6 +192,8 @@ class WPL_Export_CSV {
 				array_push( $csv_data_row, $item['transaction_id'] );
 				array_push( $csv_data_row, $item['OrderLineItemID'] );
 				array_push( $csv_data_row, $item['TransactionPrice'] );
+				array_push( $csv_data_row, $row->order_id );
+				array_push( $csv_data_row, $row->date_created );
 
 				fputcsv( $fp, $csv_data_row );
 			}		
@@ -214,7 +220,7 @@ class WPL_Export_CSV {
      * @access public
      * @return void
      */
-    public function wple_enqueue() {
+    public function wpl_enqueue() {
         wp_enqueue_style( 'wple-style-custom', plugins_url( 'css/style.css', dirname(__FILE__) ) );
         wp_enqueue_script( 'wple-script-main', plugins_url( 'js/custom_script.js', dirname(__FILE__) ), array(), '1.0.0', true);
     }
@@ -302,6 +308,93 @@ class WPL_Export_CSV {
 
 		return sizeof( $items ); 
 	}
+
+	/**
+	 * Import Order CSV - One order per row
+	 *
+	 * @access public
+	 * @return 
+	 */
+	public function import_order_csv() {
+
+		// Upload csv file to wordpress upload folder
+	    
+	    $uploadedfile = $_FILES['csv_file'];
+		$upload_overrides = array( 'test_form' => false );
+		
+		$movefile = wp_handle_upload( $uploadedfile, $upload_overrides );
+		
+		if ( ! $movefile || isset($movefile['error']) ) {
+			die( $movefile['error'] );
+		}
+		
+		// Parse csv file
+		
+		$file = fopen($movefile['file'],"r");
+		
+		$expected_headers = array(
+			'id',
+			'order_id',
+			'date_created',
+			'total',
+			'currency',
+			'status',
+			'post_id',
+			'item_count',
+			'sellingManagerSalesRecordNumber',
+			'buyer_userid',
+			'buyer_name',
+			'buyer_email',
+			'eBayPaymentStatus',
+			'CheckoutStatus',
+			'ShippingService',
+			'PaymentMethod',
+			'ShippingAddress_City',
+			'CompleteStatus',
+			'LastTimeModified',
+			'account_id',
+			'site_id',
+			'tracking_number',
+			'tracking_provider',
+			'shipped_date'
+		);
+
+		$csv_headers = fgetcsv($file);
+		if ($csv_headers !== $expected_headers) {
+			die( "The uploaded CSV is not WPLAB order CSV." );
+		}
+		
+		while( ! feof( $file ) ) {
+			// a line of csv string to array
+			$data = fgetcsv( $file );
+			$post_id = $data[0];
+
+			// Extract tracking data from the current row
+			$args = array();
+			$args['TrackingNumber'] = $data[21];
+			$args['TrackingCarrier'] = $data[22];
+			$args['ShippedTime'] = $data[23];	// optional
+			//$args['FeedbackText'] = $data[24];	// optional
+
+			// Save tracking data as custom meta field
+			if ( $args['TrackingNumber'] != '' ) {
+				update_post_meta( $post_id, '_tracking_number', $args['TrackingNumber'] );
+			}
+			if ( $args['TrackingCarrier'] != '' ) {
+				update_post_meta( $post_id, '_tracking_provider', $args['TrackingCarrier'] );
+			}
+			if ( $args['ShippedTime'] != '' ) {
+				update_post_meta( $post_id, '_shipped_date', $args['ShippedTime'] );
+			}
+
+			// Mark order as shipped on ebay
+			do_action('wple_complete_sales_on_ebay', $post_id, $args);
+		}
+		
+		fclose($file);
+		unlink($movefile['file']);
+	}
+
 }
 
 endif;

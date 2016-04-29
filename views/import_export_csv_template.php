@@ -11,7 +11,7 @@
     <div class="tab-export tab-active">
 
     	<!-- ONE ORDER PER ROW FORM START-->
-    	<form method="get" id="wple_order_export">
+    	<form method="POST" id="wple_order_export">
     		<input type="hidden" name="addon_action" value="export_order" />
     		<?php
 				do_action( 'wple_order_export' );
@@ -21,7 +21,7 @@
     	<!-- ONE ORDER PER ROW FORM END -->
     	
     	<!-- ONE ORDER ITEM PER ROW FORM STARt -->
-    	<form method="get" id="wple_orderitem_export">
+    	<form method="POST" id="wple_orderitem_export">
     		<input type="hidden" name="addon_action" value="export_orderitem" />
     		<?php
 				do_action( 'wple_orderitem_export' );
@@ -35,7 +35,7 @@
 
     <!-- IMPORT TAB CONTENT START -->
     <div class="tab-import">
-        <form method="get" id="wple_order_import">
+        <form id="wple_order_import" enctype="multipart/form-data" method="POST" >
         	<input type="file" name="csv_file" />
     		<input type="hidden" name="addon_action" value="import_order" />
     		<?php
