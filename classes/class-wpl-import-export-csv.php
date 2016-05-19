@@ -16,7 +16,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( ! class_exists( 'WPL_Import_Export_CSV' ) ) :
 
 // To parse serialized object "details", it should require EBatNS classes
-include_once WP_PLUGIN_DIR . '/wplab-import-export-addon/include/OrderType.php';
+
+if ( ! class_exists('OrderType') ) {
+	require_once WP_PLUGIN_DIR . '/wplab-import-export-addon/include/OrderType.php';
+}
+
 include_once ABSPATH . 'wp-admin/includes/media.php';
 include_once ABSPATH . 'wp-admin/includes/file.php';
 include_once ABSPATH . 'wp-admin/includes/image.php';
