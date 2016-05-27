@@ -310,7 +310,12 @@ class WPL_Import_Export_CSV {
 
 		if ( empty( $items ) ) return 0;
 
-		return sizeof( $items ); 
+		$item_count = 0;
+		foreach ($items as $item) {
+        	$item_count += $item["quantity"];
+        }
+
+		return $item_count; 
 	}
 
 	/**
